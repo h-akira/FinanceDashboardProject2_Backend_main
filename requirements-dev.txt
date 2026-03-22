@@ -1,0 +1,3 @@
+-r src/requirements.txt
+pytest
+moto[cognitoidp,dynamodb]

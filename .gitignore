@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Virtual environment
+env/
+venv/
+.venv/
+
+# AWS SAM
+.aws-sam/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+*.env.local
+
+# macOS
+.DS_Store
+
+# Temporary files
+tmp/
+
+# Symlinks (reference only)
+shogi_sample
+verification

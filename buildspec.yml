@@ -1,0 +1,22 @@
+version: 0.2
+
+env:
+  variables:
+    REGION: ap-northeast-1
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+  build:
+    commands:
+      - sam build
+      - >-
+        sam deploy
+        --stack-name stack-fdp-${ENV}-backend-main
+        --no-confirm-changeset
+        --no-fail-on-empty-changeset
+        --resolve-s3
+        --parameter-overrides Env=$ENV
+        --capabilities CAPABILITY_NAMED_IAM
+        --region ${REGION}

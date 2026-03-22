@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: FinanceDashboardProject2 Main API
+
+Parameters:
+  Env:
+    Type: String
+    Description: Environment identifier (dev, pro)
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.13
+  Api:
+    Cors:
+      AllowMethods: "'GET,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
+      AllowCredentials: false
+
+Resources:
+  DataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "table-fdp-${Env}-backend-main"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      Tags:
+        - Key: Project
+          Value: FinanceDashboardProject2
+        - Key: Environment
+          Value: !Ref Env
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !ImportValue
+              Fn::Sub: "fdp-${Env}-infra-CognitoUserPoolArn"
+            Identity:
+              Header: Authorization
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "lambda-fdp-${Env}-backend-main"
+      Tracing: Active
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: fdp-main
+          LOG_LEVEL: INFO
+          USER_POOL_ID: !ImportValue
+            Fn::Sub: "fdp-${Env}-infra-CognitoUserPoolId"
+          CLIENT_ID: !ImportValue
+            Fn::Sub: "fdp-${Env}-infra-CognitoClientId"
+          TABLE_NAME: !Ref DataTable
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminGetUser
+              Resource: !ImportValue
+                Fn::Sub: "fdp-${Env}-infra-CognitoUserPoolArn"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:GetItem
+              Resource: !GetAtt DataTable.Arn
+      Events:
+        UsersMe:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/users/me
+            Method: ANY
+        InterestRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/finance/interest-rate
+            Method: GET
+
+Outputs:
+  ApiGatewayId:
+    Description: API Gateway REST API ID
+    Value: !Ref ApiGateway
+    Export:
+      Name: !Sub "fdp-${Env}-backend-main-ApiGatewayId"
+  ApiGatewayStageName:
+    Description: API Gateway stage name
+    Value: Prod
+    Export:
+      Name: !Sub "fdp-${Env}-backend-main-ApiGatewayStageName"
