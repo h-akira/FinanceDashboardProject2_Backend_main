@@ -16,11 +16,34 @@ FRED_BOUNDARY = datetime.datetime(2026, 1, 1)
 
 
 def _fetch_fred_series(series_id: str, start: datetime.datetime, end: datetime.datetime) -> pd.Series:
-  """Fetch a single FRED series and resample to monthly (last value)."""
+  """Fetch a single FRED series and sample on the 1st and 15th of each month
+  (or next available business day), plus the latest available data point."""
   df: pd.DataFrame = web.DataReader([series_id], "fred", start, end)
-  series: pd.Series = df[series_id].ffill().dropna()
-  monthly: pd.Series = series.resample("ME").last().dropna()
-  return monthly
+  daily: pd.Series = df[series_id].ffill().dropna()
+  if daily.empty:
+    return daily
+
+  # Semi-monthly sampling (1st and 15th or next available business day)
+  targets = []
+  for year in range(daily.index[0].year, daily.index[-1].year + 1):
+    for month in range(1, 13):
+      for day in (1, 15):
+        try:
+          d = pd.Timestamp(year, month, day)
+        except ValueError:
+          continue
+        loc = daily.index.searchsorted(d)
+        if loc < len(daily.index):
+          targets.append(daily.index[loc])
+  targets = sorted(set(targets))
+  sampled = daily.loc[daily.index.isin(targets)]
+
+  # Append the latest data point
+  latest_idx = daily.index[-1]
+  if latest_idx not in sampled.index:
+    sampled = pd.concat([sampled, daily.iloc[[-1]]])
+
+  return sampled
 
 
 @tracer.capture_method(capture_response=False)

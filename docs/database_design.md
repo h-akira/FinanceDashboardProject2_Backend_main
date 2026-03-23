@@ -28,10 +28,10 @@
 
 | PK パターン | SK パターン | 属性 | 用途 |
 |------------|------------|------|------|
-| `KIND#<データ系列名>` | `TIME#<YYYY-MM-DD>` | `value` (Number) | 時系列データ（月次） |
+| `KIND#<データ系列名>` | `TIME#<YYYY-MM-DD>` | `value` (Number) | 時系列データ（半月単位） |
 
 - **PK**: データ系列単位で分割する。同じデータを複数のグラフから参照可能にするため、グラフ単位ではなくデータ系列単位とする
-- **SK**: 月末日（`YYYY-MM-DD` 形式）。Query の `ScanIndexForward=True` で昇順取得する
+- **SK**: 各月の 1 日と 15 日（またはその直後の営業日）の日付（`YYYY-MM-DD` 形式）。Query の `ScanIndexForward=True` で昇順取得する
 - **value**: 数値データ。DynamoDB の Number 型（内部的には Decimal）で格納する
 
 ---
@@ -42,8 +42,8 @@
 
 | PK | SK 例 | value 例 | データソース |
 |----|--------|---------|------------|
-| `KIND#target_rate` | `TIME#2024-12-31` | `4.33` | FRED DFEDTAR / DFEDTARU |
-| `KIND#dgs10` | `TIME#2024-12-31` | `4.577` | FRED DGS10 |
+| `KIND#target_rate` | `TIME#2024-12-02` | `4.33` | FRED DFEDTAR / DFEDTARU |
+| `KIND#dgs10` | `TIME#2024-12-02` | `4.577` | FRED DGS10 |
 
 - `target_rate`: FF 金利誘導目標（上限）。DFEDTAR（2008年以前）と DFEDTARU（2008年以降）を結合したデータ
 - `dgs10`: 米国10年国債利回り
@@ -73,20 +73,30 @@ python bin/load_interest_rate.py --env dev
 
 # pro 環境に登録
 python bin/load_interest_rate.py --env pro
+
+# データの確認（DynamoDB に書き込まず標準出力に表示）
+python bin/load_interest_rate.py --env dev --dry-run
+
+# 全データ削除
+python bin/load_interest_rate.py --env dev --remove-all
+
+# リージョン指定
+python bin/load_interest_rate.py --env dev --region us-east-1
 ```
 
 ### スクリプトの動作
 
 1. FRED API（pandas_datareader）から 1982年〜2025年末のデータを取得
-2. 日次データを月次（月末値）にリサンプリング
+2. 日次データを半月単位（各月 1 日・15 日、またはその直後の営業日）にリサンプリング
 3. `batch_writer` で DynamoDB に書き込み（PutItem による冪等な上書き）
 
 ### データの境界
 
-| 期間 | データソース | 保持先 |
-|------|------------|--------|
-| 〜2025-12-31 | FRED（手動取得） | DynamoDB |
-| 2026-01-01〜 | FRED（Lambda がリクエスト時に取得） | レスポンスに動的結合（DynamoDB には書き込まない） |
+| 期間 | データソース | 保持先 | 粒度 |
+|------|------------|--------|------|
+| 〜2025-12-31 | FRED（手動取得） | DynamoDB | 半月単位（1 日・15 日） |
+
+2026-01-01 以降のデータは DynamoDB には格納しない。API レスポンスへの結合はサービス層の責務である。
 
 ---
 
@@ -107,7 +117,7 @@ python bin/load_interest_rate.py --env pro
 
 ### パーティションサイズ
 
-同一 PK のアイテム数は数千程度が推奨される。月次データの場合、30年分でも約 360 件であり、十分に余裕がある。
+同一 PK のアイテム数は数千程度が推奨される。半月単位データの場合、40年分でも約 960 件であり、十分に余裕がある。
 
 ### 数値の精度
 
