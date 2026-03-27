@@ -100,6 +100,18 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /api/v1/main/finance/interest-rate
             Method: GET
+        CustomChartSources:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/finance/custom-chart/sources
+            Method: GET
+        CustomChartData:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/finance/custom-chart/data
+            Method: GET
 
 Outputs:
   ApiGatewayId:

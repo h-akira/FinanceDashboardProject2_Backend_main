@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import boto3
 
-from conftest import seed_interest_rate_data
+from conftest import seed_interest_rate_data, seed_custom_chart_data
 
 
 class TestUserService:
@@ -102,3 +102,56 @@ class TestFinanceService:
 
     assert len(result["data"]) == 4
     assert result["data"][-1]["time"] == "2026-01-31"
+
+
+class TestCustomChartService:
+  def test_get_sources(self):
+    from services.custom_chart_service import get_sources
+    result = get_sources()
+
+    assert result["max_axes"] == 2
+    assert len(result["sources"]) == 7
+    for s in result["sources"]:
+      assert all(k in s for k in ("id", "name", "axis_group", "axis_label"))
+
+  def test_get_data_from_dynamodb(self, dynamodb_table):
+    seed_custom_chart_data(dynamodb_table)
+
+    from services.custom_chart_service import get_data
+    with patch("services.custom_chart_service._fetch_recent_for_source", return_value=[]):
+      result = get_data(["target_rate", "sp500"])
+
+    assert len(result["series"]) == 2
+    tr = next(s for s in result["series"] if s["id"] == "target_rate")
+    assert len(tr["data"]) == 2
+    assert tr["axis_group"] == "rate_pct1"
+    assert tr["axis_label"] == "%"
+
+    sp = next(s for s in result["series"] if s["id"] == "sp500")
+    assert len(sp["data"]) == 2
+    assert sp["axis_group"] == "price_usd1"
+
+  def test_get_data_deduplication(self, dynamodb_table):
+    seed_custom_chart_data(dynamodb_table)
+
+    recent = [
+      {"time": "2024-01-15", "value": 9999.0},  # duplicate, should be ignored
+      {"time": "2024-03-01", "value": 5.5},      # new, should be added
+    ]
+
+    from services.custom_chart_service import get_data
+    with patch("services.custom_chart_service._fetch_recent_for_source", return_value=recent):
+      result = get_data(["target_rate"])
+
+    tr = result["series"][0]
+    assert len(tr["data"]) == 3  # 2 stored + 1 new
+    jan = next(d for d in tr["data"] if d["time"] == "2024-01-15")
+    assert jan["value"] == 5.33  # stored value, not 9999
+
+  def test_get_data_invalid_source(self, dynamodb_table):
+    import pytest
+    from services.custom_chart_service import get_data
+    from common.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="Invalid source IDs"):
+      get_data(["nonexistent"])

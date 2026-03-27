@@ -1,0 +1,62 @@
+{
+  "max_axes": 2,
+  "axis_groups": {
+    "rate_pct1": { "label": "%" },
+    "price_usd1": { "label": "USD" },
+    "ratio1": { "label": "倍率" },
+    "index1": { "label": "指数" },
+    "score1": { "label": "スコア" }
+  },
+  "sources": {
+    "target_rate": {
+      "name": "政策金利 (FF金利誘導目標上限)",
+      "axis_group": "rate_pct1",
+      "source_type": "fred",
+      "fred_series": ["DFEDTAR", "DFEDTARU"],
+      "fred_boundary": "2008-12-16",
+      "start": "1982-09-27"
+    },
+    "dgs10": {
+      "name": "米国10年国債利回り",
+      "axis_group": "rate_pct1",
+      "source_type": "fred",
+      "fred_series": ["DGS10"],
+      "start": "1982-09-27"
+    },
+    "baa10y": {
+      "name": "Baa社債スプレッド",
+      "axis_group": "rate_pct1",
+      "source_type": "fred",
+      "fred_series": ["BAA10Y"],
+      "start": "1986-01-01"
+    },
+    "sp500": {
+      "name": "S&P 500",
+      "axis_group": "price_usd1",
+      "source_type": "yfinance",
+      "ticker": "^GSPC",
+      "start": "1982-09-27"
+    },
+    "sp500_yoy": {
+      "name": "S&P 500 前年比",
+      "axis_group": "ratio1",
+      "source_type": "yfinance",
+      "ticker": "^GSPC",
+      "transform": "yoy_ratio",
+      "start": "1983-09-27"
+    },
+    "dtwexbgs": {
+      "name": "ドル指数 (実効為替レート)",
+      "axis_group": "index1",
+      "source_type": "fred",
+      "fred_series": ["DTWEXBGS"],
+      "start": "2006-01-01"
+    },
+    "score": {
+      "name": "複合スコア",
+      "axis_group": "score1",
+      "source_type": "calculated",
+      "start": "2007-01-01"
+    }
+  }
+}

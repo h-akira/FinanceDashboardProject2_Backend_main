@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import boto3
 
-from conftest import make_apigw_event, seed_interest_rate_data
+from conftest import make_apigw_event, seed_interest_rate_data, seed_custom_chart_data
 
 
 class TestUsersRoutes:
@@ -148,3 +148,70 @@ class TestFinanceRoutes:
     # Verify stored data takes precedence over FRED duplicate
     dec_entry = next(d for d in body["data"] if d["time"] == "2024-12-31")
     assert dec_entry["target_rate"] != 9.99
+
+
+class TestCustomChartRoutes:
+  def test_get_sources(self, dynamodb_table):
+    from app import lambda_handler
+    event = make_apigw_event("GET", "/api/v1/main/finance/custom-chart/sources", username="testuser")
+    result = lambda_handler(event, None)
+
+    assert result["statusCode"] == 200
+    body = json.loads(result["body"])
+    assert "sources" in body
+    assert "max_axes" in body
+    assert body["max_axes"] == 2
+    assert len(body["sources"]) == 7
+
+  def test_get_data_success(self, dynamodb_table):
+    seed_custom_chart_data(dynamodb_table)
+
+    from app import lambda_handler
+    with patch("services.custom_chart_service._fetch_recent_for_source", return_value=[]):
+      event = make_apigw_event(
+        "GET", "/api/v1/main/finance/custom-chart/data",
+        username="testuser",
+        query_params={"sources": "target_rate,dgs10"},
+      )
+      result = lambda_handler(event, None)
+
+    assert result["statusCode"] == 200
+    body = json.loads(result["body"])
+    assert len(body["series"]) == 2
+
+  def test_get_data_no_sources_param(self, dynamodb_table):
+    from app import lambda_handler
+    event = make_apigw_event(
+      "GET", "/api/v1/main/finance/custom-chart/data",
+      username="testuser",
+    )
+    result = lambda_handler(event, None)
+
+    assert result["statusCode"] == 400
+    body = json.loads(result["body"])
+    assert "sources" in body["message"].lower()
+
+  def test_get_data_invalid_source(self, dynamodb_table):
+    from app import lambda_handler
+    with patch("services.custom_chart_service._fetch_recent_for_source", return_value=[]):
+      event = make_apigw_event(
+        "GET", "/api/v1/main/finance/custom-chart/data",
+        username="testuser",
+        query_params={"sources": "invalid_id"},
+      )
+      result = lambda_handler(event, None)
+
+    assert result["statusCode"] == 400
+    body = json.loads(result["body"])
+    assert "Invalid source IDs" in body["message"]
+
+  def test_get_data_empty_sources(self, dynamodb_table):
+    from app import lambda_handler
+    event = make_apigw_event(
+      "GET", "/api/v1/main/finance/custom-chart/data",
+      username="testuser",
+      query_params={"sources": ""},
+    )
+    result = lambda_handler(event, None)
+
+    assert result["statusCode"] == 400
