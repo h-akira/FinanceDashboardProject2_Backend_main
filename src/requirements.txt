@@ -3,3 +3,4 @@ boto3
 pandas>=2.0,<3
 pandas-datareader>=0.10
 setuptools
+yfinance

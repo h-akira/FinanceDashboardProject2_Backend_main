@@ -83,6 +83,20 @@ def seed_interest_rate_data(table) -> None:
       batch.put_item(Item=item)
 
 
+def seed_custom_chart_data(table) -> None:
+  """Insert sample custom chart data into DynamoDB."""
+  items = [
+    {"PK": "KIND#target_rate", "SK": "TIME#2024-01-15", "value": Decimal("5.3300")},
+    {"PK": "KIND#target_rate", "SK": "TIME#2024-02-01", "value": Decimal("5.3300")},
+    {"PK": "KIND#sp500", "SK": "TIME#2024-01-15", "value": Decimal("4783.4500")},
+    {"PK": "KIND#sp500", "SK": "TIME#2024-02-01", "value": Decimal("4845.6500")},
+    {"PK": "KIND#dgs10", "SK": "TIME#2024-01-15", "value": Decimal("4.1200")},
+  ]
+  with table.batch_writer() as batch:
+    for item in items:
+      batch.put_item(Item=item)
+
+
 def make_apigw_event(
   method: str,
   path: str,
