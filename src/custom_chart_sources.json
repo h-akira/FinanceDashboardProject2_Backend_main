@@ -1,16 +1,17 @@
 {
   "max_axes": 2,
+  "other_display_name": "その他",
   "axis_groups": {
-    "rate_pct1": { "label": "%" },
-    "price_usd1": { "label": "USD" },
-    "ratio1": { "label": "倍率" },
-    "index1": { "label": "指数" },
-    "score1": { "label": "スコア" }
+    "rate_pct1": { "label": "%", "display_name": "金利・スプレッド" },
+    "price_usd1": { "label": "USD", "display_name": "米国株価指数" },
+    "ratio1": { "label": "倍率", "display_name": "前年比" },
+    "index1": { "label": "指数", "display_name": "通貨指数" }
   },
   "sources": {
     "target_rate": {
       "name": "政策金利 (FF金利誘導目標上限)",
       "axis_group": "rate_pct1",
+      "default": true,
       "source_type": "fred",
       "fred_series": ["DFEDTAR", "DFEDTARU"],
       "fred_boundary": "2008-12-16",
@@ -19,13 +20,15 @@
     "dgs10": {
       "name": "米国10年国債利回り",
       "axis_group": "rate_pct1",
+      "default": true,
       "source_type": "fred",
       "fred_series": ["DGS10"],
       "start": "1982-09-27"
     },
     "baa10y": {
-      "name": "Baa社債スプレッド",
+      "name": "米国Baa社債スプレッド",
       "axis_group": "rate_pct1",
+      "default": false,
       "source_type": "fred",
       "fred_series": ["BAA10Y"],
       "start": "1986-01-01"
@@ -33,6 +36,7 @@
     "sp500": {
       "name": "S&P 500",
       "axis_group": "price_usd1",
+      "default": false,
       "source_type": "yfinance",
       "ticker": "^GSPC",
       "start": "1982-09-27"
@@ -40,6 +44,7 @@
     "sp500_yoy": {
       "name": "S&P 500 前年比",
       "axis_group": "ratio1",
+      "default": false,
       "source_type": "yfinance",
       "ticker": "^GSPC",
       "transform": "yoy_ratio",
@@ -48,13 +53,15 @@
     "dtwexbgs": {
       "name": "ドル指数 (実効為替レート)",
       "axis_group": "index1",
+      "default": false,
       "source_type": "fred",
       "fred_series": ["DTWEXBGS"],
       "start": "2006-01-01"
     },
     "score": {
-      "name": "複合スコア",
-      "axis_group": "score1",
+      "name": "投資環境スコア（堀井）",
+      "axis_group": { "label": "スコア" },
+      "default": false,
       "source_type": "calculated",
       "start": "2007-01-01"
     }

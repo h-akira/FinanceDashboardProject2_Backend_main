@@ -29,21 +29,36 @@ def _load_config() -> dict:
   return _config
 
 
+def _resolve_axis(source_def: dict, config: dict) -> tuple[str, str]:
+  """Resolve axis_group string and axis_label from a source definition.
+
+  Returns (normalized_axis_group, axis_label).
+  - str axis_group: lookup label from config["axis_groups"]
+  - dict axis_group: independent axis source, normalize to "other"
+  """
+  raw = source_def["axis_group"]
+  if isinstance(raw, dict):
+    return "other", raw["label"]
+  return raw, config["axis_groups"][raw]["label"]
+
+
 def get_sources() -> dict:
   """Return available sources and max_axes for the frontend checklist."""
   config = _load_config()
   sources = []
   for source_id, source_def in config["sources"].items():
-    axis_group = source_def["axis_group"]
-    axis_label = config["axis_groups"][axis_group]["label"]
+    axis_group, axis_label = _resolve_axis(source_def, config)
     sources.append({
       "id": source_id,
       "name": source_def["name"],
       "axis_group": axis_group,
       "axis_label": axis_label,
+      "default": source_def.get("default", False),
     })
   return {
     "sources": sources,
+    "axis_groups": config["axis_groups"],
+    "other_display_name": config["other_display_name"],
     "max_axes": config["max_axes"],
   }
 
@@ -231,8 +246,7 @@ def get_data(source_ids: list[str]) -> dict:
   series_list = []
   for source_id in source_ids:
     source_def = valid_sources[source_id]
-    axis_group = source_def["axis_group"]
-    axis_label = config["axis_groups"][axis_group]["label"]
+    axis_group, axis_label = _resolve_axis(source_def, config)
 
     # Get stored data from DynamoDB
     stored_items = finance_repository.query_by_kind(source_id)

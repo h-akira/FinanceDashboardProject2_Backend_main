@@ -112,7 +112,45 @@ class TestCustomChartService:
     assert result["max_axes"] == 2
     assert len(result["sources"]) == 7
     for s in result["sources"]:
-      assert all(k in s for k in ("id", "name", "axis_group", "axis_label"))
+      assert all(k in s for k in ("id", "name", "axis_group", "axis_label", "default"))
+
+    # Verify axis_groups and other_display_name are included
+    assert "axis_groups" in result
+    assert "other_display_name" in result
+    assert result["other_display_name"] == "その他"
+
+    # Verify axis_groups have display_name
+    for group in result["axis_groups"].values():
+      assert "label" in group
+      assert "display_name" in group
+
+  def test_get_sources_defaults(self):
+    from services.custom_chart_service import get_sources
+    result = get_sources()
+
+    sources_by_id = {s["id"]: s for s in result["sources"]}
+    assert sources_by_id["target_rate"]["default"] is True
+    assert sources_by_id["dgs10"]["default"] is True
+    assert sources_by_id["baa10y"]["default"] is False
+    assert sources_by_id["sp500"]["default"] is False
+    assert sources_by_id["score"]["default"] is False
+
+  def test_get_sources_independent_axis_normalized(self):
+    from services.custom_chart_service import get_sources
+    result = get_sources()
+
+    score = next(s for s in result["sources"] if s["id"] == "score")
+    assert score["axis_group"] == "other"
+    assert score["axis_label"] == "スコア"
+    assert score["name"] == "投資環境スコア（堀井）"
+
+  def test_get_sources_normal_axis_label(self):
+    from services.custom_chart_service import get_sources
+    result = get_sources()
+
+    tr = next(s for s in result["sources"] if s["id"] == "target_rate")
+    assert tr["axis_label"] == "%"
+    assert tr["axis_group"] == "rate_pct1"
 
   def test_get_data_from_dynamodb(self, dynamodb_table):
     seed_custom_chart_data(dynamodb_table)
@@ -130,6 +168,17 @@ class TestCustomChartService:
     sp = next(s for s in result["series"] if s["id"] == "sp500")
     assert len(sp["data"]) == 2
     assert sp["axis_group"] == "price_usd1"
+
+  def test_get_data_independent_axis_source(self, dynamodb_table):
+    seed_custom_chart_data(dynamodb_table)
+
+    from services.custom_chart_service import get_data
+    with patch("services.custom_chart_service._fetch_recent_for_source", return_value=[]):
+      result = get_data(["score"])
+
+    score = result["series"][0]
+    assert score["axis_group"] == "other"
+    assert score["axis_label"] == "スコア"
 
   def test_get_data_deduplication(self, dynamodb_table):
     seed_custom_chart_data(dynamodb_table)

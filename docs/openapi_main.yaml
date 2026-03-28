@@ -95,13 +95,32 @@ components:
           example: "政策金利 (FF金利誘導目標上限)"
         axis_group:
           type: string
-          description: 軸グループID（同一グループは同じY軸を共有）
+          description: >
+            軸グループID。axis_groupsに定義されたグループIDまたは "other"。
+            "other" の場合はソースごとに独立した軸を消費する。
           example: "rate_pct1"
         axis_label:
           type: string
-          description: 軸の表示ラベル
+          description: >
+            軸の表示ラベル。通常ソースはaxis_groupsのlabelから、
+            独立軸ソース(other)はソース固有のlabelから取得。
           example: "%"
-      required: [id, name, axis_group, axis_label]
+        default:
+          type: boolean
+          description: デフォルトで選択状態にするかどうか
+      required: [id, name, axis_group, axis_label, default]
+
+    CustomChartAxisGroup:
+      type: object
+      description: 軸グループ定義
+      properties:
+        label:
+          type: string
+          description: 軸の単位ラベル
+        display_name:
+          type: string
+          description: グループの日本語表示名
+      required: [label, display_name]
 
     CustomChartSourcesResponse:
       type: object
@@ -110,11 +129,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CustomChartSource"
+        axis_groups:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CustomChartAxisGroup"
+          description: 軸グループ定義（キー順が表示順）。独立軸ソース(other)は含まれない
+        other_display_name:
+          type: string
+          description: 独立軸ソースの表示グループ名
+          example: "その他"
         max_axes:
           type: integer
           description: Y軸の最大数
           example: 2
-      required: [sources, max_axes]
+      required: [sources, axis_groups, other_display_name, max_axes]
 
     CustomChartDataPoint:
       type: object
@@ -141,7 +169,7 @@ components:
           description: ソースの表示名
         axis_group:
           type: string
-          description: 軸グループID
+          description: 軸グループIDまたは "other"（独立軸ソース）
         axis_label:
           type: string
           description: 軸の表示ラベル

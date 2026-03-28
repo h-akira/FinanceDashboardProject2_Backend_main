@@ -160,8 +160,20 @@ class TestCustomChartRoutes:
     body = json.loads(result["body"])
     assert "sources" in body
     assert "max_axes" in body
+    assert "axis_groups" in body
+    assert "other_display_name" in body
     assert body["max_axes"] == 2
+    assert body["other_display_name"] == "その他"
     assert len(body["sources"]) == 7
+
+    # Verify default field exists on all sources
+    for s in body["sources"]:
+      assert "default" in s
+
+    # Verify axis_groups have display_name
+    for group in body["axis_groups"].values():
+      assert "label" in group
+      assert "display_name" in group
 
   def test_get_data_success(self, dynamodb_table):
     seed_custom_chart_data(dynamodb_table)

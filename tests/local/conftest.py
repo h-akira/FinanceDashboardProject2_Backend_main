@@ -91,6 +91,7 @@ def seed_custom_chart_data(table) -> None:
     {"PK": "KIND#sp500", "SK": "TIME#2024-01-15", "value": Decimal("4783.4500")},
     {"PK": "KIND#sp500", "SK": "TIME#2024-02-01", "value": Decimal("4845.6500")},
     {"PK": "KIND#dgs10", "SK": "TIME#2024-01-15", "value": Decimal("4.1200")},
+    {"PK": "KIND#score", "SK": "TIME#2024-01-15", "value": Decimal("3.5000")},
   ]
   with table.batch_writer() as batch:
     for item in items:
