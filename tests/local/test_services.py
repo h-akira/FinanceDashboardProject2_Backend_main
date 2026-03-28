@@ -114,15 +114,33 @@ class TestCustomChartService:
     for s in result["sources"]:
       assert all(k in s for k in ("id", "name", "axis_group", "axis_label", "default"))
 
-    # Verify axis_groups and other_display_name are included
+    # Verify axis_groups includes both normal and independent groups
     assert "axis_groups" in result
-    assert "other_display_name" in result
-    assert result["other_display_name"] == "その他"
+    assert "rate_pct1" in result["axis_groups"]
+    assert "independent1" in result["axis_groups"]
 
-    # Verify axis_groups have display_name
-    for group in result["axis_groups"].values():
-      assert "label" in group
+    # Verify independent_groups and other_display_name are NOT in response
+    assert "independent_groups" not in result
+    assert "other_display_name" not in result
+
+    # Verify axis_groups have independent flag and display_name
+    for ag_key, group in result["axis_groups"].items():
       assert "display_name" in group
+      assert "independent" in group
+      if not group["independent"]:
+        assert "label" in group
+
+    # Verify independent axis group
+    ind = result["axis_groups"]["independent1"]
+    assert ind["independent"] is True
+    assert ind["display_name"] == "独立軸"
+    assert "stock_index" in ind["local_groups"]
+    assert "investment_env" in ind["local_groups"]
+
+    # Verify normal axis group with local_groups
+    rate = result["axis_groups"]["rate_pct1"]
+    assert rate["independent"] is False
+    assert "us" in rate["local_groups"]
 
   def test_get_sources_defaults(self):
     from services.custom_chart_service import get_sources
@@ -135,14 +153,31 @@ class TestCustomChartService:
     assert sources_by_id["sp500"]["default"] is False
     assert sources_by_id["score"]["default"] is False
 
-  def test_get_sources_independent_axis_normalized(self):
+  def test_get_sources_independent_axis(self):
     from services.custom_chart_service import get_sources
     result = get_sources()
 
     score = next(s for s in result["sources"] if s["id"] == "score")
-    assert score["axis_group"] == "other"
+    assert score["axis_group"] == "independent1"
     assert score["axis_label"] == "スコア"
     assert score["name"] == "投資環境スコア（堀井）"
+    assert score["local_group"] == "investment_env"
+
+    sp500 = next(s for s in result["sources"] if s["id"] == "sp500")
+    assert sp500["axis_group"] == "independent1"
+    assert sp500["axis_label"] == "USD"
+    assert sp500["local_group"] == "stock_index"
+
+  def test_get_sources_local_group(self):
+    from services.custom_chart_service import get_sources
+    result = get_sources()
+
+    tr = next(s for s in result["sources"] if s["id"] == "target_rate")
+    assert tr["local_group"] == "us"
+
+    # Source without local_group should not have the key
+    dtw = next(s for s in result["sources"] if s["id"] == "dtwexbgs")
+    assert "local_group" not in dtw
 
   def test_get_sources_normal_axis_label(self):
     from services.custom_chart_service import get_sources
@@ -167,7 +202,8 @@ class TestCustomChartService:
 
     sp = next(s for s in result["series"] if s["id"] == "sp500")
     assert len(sp["data"]) == 2
-    assert sp["axis_group"] == "price_usd1"
+    assert sp["axis_group"] == "independent1"
+    assert sp["axis_label"] == "USD"
 
   def test_get_data_independent_axis_source(self, dynamodb_table):
     seed_custom_chart_data(dynamodb_table)
@@ -177,7 +213,7 @@ class TestCustomChartService:
       result = get_data(["score"])
 
     score = result["series"][0]
-    assert score["axis_group"] == "other"
+    assert score["axis_group"] == "independent1"
     assert score["axis_label"] == "スコア"
 
   def test_get_data_deduplication(self, dynamodb_table):

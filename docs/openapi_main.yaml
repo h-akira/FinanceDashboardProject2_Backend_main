@@ -96,18 +96,23 @@ components:
         axis_group:
           type: string
           description: >
-            軸グループID。axis_groupsに定義されたグループIDまたは "other"。
-            "other" の場合はソースごとに独立した軸を消費する。
+            軸グループID。axis_groupsに定義されたキーを参照する。
           example: "rate_pct1"
         axis_label:
           type: string
           description: >
-            軸の表示ラベル。通常ソースはaxis_groupsのlabelから、
-            独立軸ソース(other)はソース固有のlabelから取得。
+            軸の表示ラベル。通常ソース(independent=false)はaxis_groupsのlabelから、
+            独立軸ソース(independent=true)はソース固有のlabelから取得。
           example: "%"
         default:
           type: boolean
           description: デフォルトで選択状態にするかどうか
+        local_group:
+          type: string
+          description: >
+            サブカテゴリID。axis_groupsの該当グループのlocal_groupsに定義されたキーを参照する。
+            サブカテゴリなしの場合は含まれない。
+          example: "us"
       required: [id, name, axis_group, axis_label, default]
 
     CustomChartAxisGroup:
@@ -116,11 +121,32 @@ components:
       properties:
         label:
           type: string
-          description: 軸の単位ラベル
+          description: >
+            軸の単位ラベル。independent=falseの場合は必須。
+            independent=trueの場合は存在しない（ソース側で定義）。
         display_name:
           type: string
           description: グループの日本語表示名
-      required: [label, display_name]
+        independent:
+          type: boolean
+          description: >
+            独立軸フラグ。trueの場合、選択ソースごとに1軸を消費する。
+            falseの場合、同一グループのソースは同じ軸を共有する。
+        local_groups:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CustomChartLocalGroup"
+          description: サブカテゴリ定義（キー順が表示順）。省略可。
+      required: [display_name, independent]
+
+    CustomChartLocalGroup:
+      type: object
+      description: サブカテゴリ定義
+      properties:
+        display_name:
+          type: string
+          description: サブカテゴリの日本語表示名
+      required: [display_name]
 
     CustomChartSourcesResponse:
       type: object
@@ -133,16 +159,12 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/CustomChartAxisGroup"
-          description: 軸グループ定義（キー順が表示順）。独立軸ソース(other)は含まれない
-        other_display_name:
-          type: string
-          description: 独立軸ソースの表示グループ名
-          example: "その他"
+          description: 軸グループ定義（キー順が表示順）。通常・独立軸の両方を含む
         max_axes:
           type: integer
           description: Y軸の最大数
           example: 2
-      required: [sources, axis_groups, other_display_name, max_axes]
+      required: [sources, axis_groups, max_axes]
 
     CustomChartDataPoint:
       type: object
@@ -169,7 +191,7 @@ components:
           description: ソースの表示名
         axis_group:
           type: string
-          description: 軸グループIDまたは "other"（独立軸ソース）
+          description: 軸グループID（axis_groupsのキー）
         axis_label:
           type: string
           description: 軸の表示ラベル

@@ -1,16 +1,41 @@
 {
   "max_axes": 2,
-  "other_display_name": "その他",
   "axis_groups": {
-    "rate_pct1": { "label": "%", "display_name": "金利・スプレッド" },
-    "price_usd1": { "label": "USD", "display_name": "米国株価指数" },
-    "ratio1": { "label": "倍率", "display_name": "前年比" },
-    "index1": { "label": "指数", "display_name": "通貨指数" }
+    "rate_pct1": {
+      "label": "%",
+      "display_name": "金利・スプレッド",
+      "independent": false,
+      "local_groups": {
+        "us": { "display_name": "米国" }
+      }
+    },
+    "ratio1": {
+      "label": "倍率",
+      "display_name": "前年比",
+      "independent": false,
+      "local_groups": {
+        "stock_index": { "display_name": "株価指数" }
+      }
+    },
+    "index1": {
+      "label": "指数",
+      "display_name": "通貨指数",
+      "independent": false
+    },
+    "independent1": {
+      "display_name": "独立軸",
+      "independent": true,
+      "local_groups": {
+        "stock_index": { "display_name": "株価指数" },
+        "investment_env": { "display_name": "投資環境" }
+      }
+    }
   },
   "sources": {
     "target_rate": {
       "name": "政策金利 (FF金利誘導目標上限)",
       "axis_group": "rate_pct1",
+      "local_group": "us",
       "default": true,
       "source_type": "fred",
       "fred_series": ["DFEDTAR", "DFEDTARU"],
@@ -20,6 +45,7 @@
     "dgs10": {
       "name": "米国10年国債利回り",
       "axis_group": "rate_pct1",
+      "local_group": "us",
       "default": true,
       "source_type": "fred",
       "fred_series": ["DGS10"],
@@ -28,6 +54,7 @@
     "baa10y": {
       "name": "米国Baa社債スプレッド",
       "axis_group": "rate_pct1",
+      "local_group": "us",
       "default": false,
       "source_type": "fred",
       "fred_series": ["BAA10Y"],
@@ -35,7 +62,9 @@
     },
     "sp500": {
       "name": "S&P 500",
-      "axis_group": "price_usd1",
+      "axis_group": "independent1",
+      "local_group": "stock_index",
+      "label": "USD",
       "default": false,
       "source_type": "yfinance",
       "ticker": "^GSPC",
@@ -44,6 +73,7 @@
     "sp500_yoy": {
       "name": "S&P 500 前年比",
       "axis_group": "ratio1",
+      "local_group": "stock_index",
       "default": false,
       "source_type": "yfinance",
       "ticker": "^GSPC",
@@ -60,7 +90,9 @@
     },
     "score": {
       "name": "投資環境スコア（堀井）",
-      "axis_group": { "label": "スコア" },
+      "axis_group": "independent1",
+      "local_group": "investment_env",
+      "label": "スコア",
       "default": false,
       "source_type": "calculated",
       "start": "2007-01-01"

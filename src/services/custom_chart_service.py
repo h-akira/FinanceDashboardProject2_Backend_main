@@ -30,16 +30,17 @@ def _load_config() -> dict:
 
 
 def _resolve_axis(source_def: dict, config: dict) -> tuple[str, str]:
-  """Resolve axis_group string and axis_label from a source definition.
+  """Resolve axis_group key and axis_label.
 
-  Returns (normalized_axis_group, axis_label).
-  - str axis_group: lookup label from config["axis_groups"]
-  - dict axis_group: independent axis source, normalize to "other"
+  Returns (axis_group, axis_label).
+  - independent=false: label from axis_groups definition
+  - independent=true: label from source definition
   """
-  raw = source_def["axis_group"]
-  if isinstance(raw, dict):
-    return "other", raw["label"]
-  return raw, config["axis_groups"][raw]["label"]
+  axis_group = source_def["axis_group"]
+  group_def = config["axis_groups"][axis_group]
+  if group_def["independent"]:
+    return axis_group, source_def["label"]
+  return axis_group, group_def["label"]
 
 
 def get_sources() -> dict:
@@ -48,17 +49,20 @@ def get_sources() -> dict:
   sources = []
   for source_id, source_def in config["sources"].items():
     axis_group, axis_label = _resolve_axis(source_def, config)
-    sources.append({
+    entry = {
       "id": source_id,
       "name": source_def["name"],
       "axis_group": axis_group,
       "axis_label": axis_label,
       "default": source_def.get("default", False),
-    })
+    }
+    local_group = source_def.get("local_group")
+    if local_group is not None:
+      entry["local_group"] = local_group
+    sources.append(entry)
   return {
     "sources": sources,
     "axis_groups": config["axis_groups"],
-    "other_display_name": config["other_display_name"],
     "max_axes": config["max_axes"],
   }
 
