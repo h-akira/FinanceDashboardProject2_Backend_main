@@ -6,7 +6,8 @@
       "display_name": "金利・スプレッド",
       "independent": false,
       "local_groups": {
-        "us": { "display_name": "米国" }
+        "us": { "display_name": "米国" },
+        "eu": { "display_name": "欧州" }
       }
     },
     "ratio1": {
@@ -96,6 +97,25 @@
       "default": false,
       "source_type": "calculated",
       "start": "2007-01-01"
+    },
+    "ecb_mro_rate": {
+      "name": "ECB政策金利 (主要リファイナンス金利)",
+      "axis_group": "rate_pct1",
+      "local_group": "eu",
+      "default": false,
+      "source_type": "fred",
+      "fred_series": ["ECBMRRFR"],
+      "start": "1999-01-01"
+    },
+    "de_10y": {
+      "name": "ドイツ10年国債利回り",
+      "axis_group": "rate_pct1",
+      "local_group": "eu",
+      "default": false,
+      "source_type": "fred",
+      "fred_series": ["IRLTLT01DEM156N"],
+      "fred_frequency": "monthly",
+      "start": "1999-01-01"
     }
   }
 }

@@ -110,7 +110,7 @@ class TestCustomChartService:
     result = get_sources()
 
     assert result["max_axes"] == 2
-    assert len(result["sources"]) == 7
+    assert len(result["sources"]) == 9
     for s in result["sources"]:
       assert all(k in s for k in ("id", "name", "axis_group", "axis_label", "default"))
 

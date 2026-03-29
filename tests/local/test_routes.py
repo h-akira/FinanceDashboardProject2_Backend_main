@@ -164,7 +164,7 @@ class TestCustomChartRoutes:
     assert "independent_groups" not in body
     assert "other_display_name" not in body
     assert body["max_axes"] == 2
-    assert len(body["sources"]) == 7
+    assert len(body["sources"]) == 9
 
     # Verify default field exists on all sources
     for s in body["sources"]:

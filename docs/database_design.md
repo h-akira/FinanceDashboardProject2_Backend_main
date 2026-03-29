@@ -44,9 +44,13 @@
 |----|--------|---------|------------|
 | `KIND#target_rate` | `TIME#2024-12-02` | `4.33` | FRED DFEDTAR / DFEDTARU |
 | `KIND#dgs10` | `TIME#2024-12-02` | `4.577` | FRED DGS10 |
+| `KIND#ecb_mro_rate` | `TIME#2024-12-02` | `2.15` | FRED ECBMRRFR |
+| `KIND#de_10y` | `TIME#2024-12-01` | `2.81` | FRED IRLTLT01DEM156N（月次） |
 
 - `target_rate`: FF 金利誘導目標（上限）。DFEDTAR（2008年以前）と DFEDTARU（2008年以降）を結合したデータ
 - `dgs10`: 米国10年国債利回り
+- `ecb_mro_rate`: ECB 政策金利（主要リファイナンス金利）
+- `de_10y`: ドイツ10年国債利回り。月次データのみ（FRED に日次データが存在しないため）
 
 ---
 
@@ -56,6 +60,8 @@
 |---|---------|---------|--------|------|
 | 1 | データ系列の全件取得 | `GET /finance/interest-rate` | `PK = KIND#target_rate` で Query | 昇順 |
 | 2 | データ系列の全件取得 | `GET /finance/interest-rate` | `PK = KIND#dgs10` で Query | 昇順 |
+| 3 | データ系列の全件取得 | `GET /finance/custom-chart/data` | `PK = KIND#ecb_mro_rate` で Query | 昇順 |
+| 4 | データ系列の全件取得 | `GET /finance/custom-chart/data` | `PK = KIND#de_10y` で Query | 昇順 |
 
 現時点ではすべて全件取得（`ScanIndexForward=True`）で対応する。将来的にデータ量が増加した場合は、SK の範囲指定による期間絞り込みを検討する。
 
